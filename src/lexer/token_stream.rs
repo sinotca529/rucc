@@ -109,33 +109,24 @@ impl<'a> TokenStream<'a> {
     }
 
     fn lex_keyword_or_id(&mut self) -> Result<Token<'a>, LexError> {
+        use TokenKind::*;
         let loc = self.cs.current_loc();
 
-        let token_kind = if self.cs.next_if_eq("return").is_some() {
-            TokenKind::Return
-        } else if self.cs.next_if_eq("if").is_some() {
-            TokenKind::If
-        } else if self.cs.next_if_eq("else").is_some() {
-            TokenKind::Else
-        } else if self.cs.next_if_eq("while").is_some() {
-            TokenKind::While
-        } else if self.cs.next_if_eq("for").is_some() {
-            TokenKind::For
-        } else if self.cs.next_if_eq("void").is_some() {
-            TokenKind::Void
-        } else if self.cs.next_if_eq("int").is_some() {
-            TokenKind::Int
-        } else if self.cs.next_if_eq("char").is_some() {
-            TokenKind::Char
-        } else if self.cs.next_if_eq("sizeof").is_some() {
-            TokenKind::Sizeof
-        } else if self.cs.peek().is_some() {
-            let id = self
-                .cs
-                .take_while(|c| !c.is_whitespace() && !TokenKind::is_punct(*c));
-            TokenKind::Id(id.value)
-        } else {
-            return Err(LexError::eof(loc));
+        let candidate = self.cs.take_while(|c| c.is_ascii_alphanumeric());
+        let token_kind = match candidate.value {
+            "return" => Return,
+            "if" => If,
+            "else" => Else,
+            "while" => While,
+            "for" => For,
+            "void" => Void,
+            "int" => Int,
+            "char" => Char,
+            "sizeof" => Sizeof,
+            "" => {
+                return Err(LexError::eof(loc));
+            }
+            id => Id(id),
         };
 
         Ok(Token {
